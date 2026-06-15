@@ -1,0 +1,47 @@
+/* app/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0a0e1a;
+  --surface:  #111827;
+  --surface2: #1a2235;
+  --border:   rgba(255, 255, 255, 0.08);
+  --gold:     #f5c842;
+  --gold2:    #e6a800;
+  --green:    #22c55e;
+  --red:      #ef4444;
+  --blue:     #3b82f6;
+  --purple:   #8b5cf6;
+  --text:     #f1f5f9;
+  --muted:    #64748b;
+
+  --font-body:    'Inter', sans-serif;
+  --font-display: 'Barlow Condensed', sans-serif;
+
+  /* Group color cycle — A=gold, B=blue, C=red, D=purple, repeats */
+  --group-color-0: var(--gold);
+  --group-color-1: var(--blue);
+  --group-color-2: var(--red);
+  --group-color-3: var(--purple);
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
