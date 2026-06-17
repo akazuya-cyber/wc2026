@@ -4,6 +4,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import type { Match, MatchStatus } from '@/types/football'
+import { formatThaiTime, formatThaiDateShort, nowInTimeZone } from '@/lib/date-utils'
 
 const LIVE_STATUSES: MatchStatus[] = ['1H', 'HT', '2H', 'ET', 'P']
 
@@ -12,22 +13,22 @@ function isLive(status: MatchStatus) {
 }
 
 function formatTime(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleTimeString('th-TH', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Bangkok',
-  }) + ' น.'
+  return formatThaiTime(dateStr)
 }
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('th-TH', {
-    day: 'numeric',
-    month: 'short',
-    year: '2-digit',
+  // dateStr is an ISO timestamp; render it as Bangkok wall-clock date
+  const bangkokNow = nowInTimeZone('Asia/Bangkok')
+  const utcDate = new Date(dateStr)
+  // Shift the UTC instant into Bangkok wall-clock by re-using nowInTimeZone's
+  // approach: format the given instant's date parts in Asia/Bangkok.
+  const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Bangkok',
-  })
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(utcDate)
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? '1'
+  const d = new Date(parseInt(get('year'), 10), parseInt(get('month'), 10) - 1, parseInt(get('day'), 10))
+  return formatThaiDateShort(d)
 }
 
 function ScoreDisplay({ match }: { match: Match }) {
@@ -108,6 +109,9 @@ export default function TodayMatches() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Render the date label only after mount so the server's render pass
+  // (which has no "current time") doesn't disagree with the client's.
+  const [todayLabel, setTodayLabel] = useState<string | null>(null)
 
   const fetchMatches = useCallback(async () => {
     try {
@@ -130,7 +134,10 @@ export default function TodayMatches() {
     return () => clearInterval(id)
   }, [fetchMatches])
 
-  const today = new Date()
+  useEffect(() => {
+    setTodayLabel(formatDate(new Date().toISOString()))
+  }, [])
+
   const hasLive = matches.some(m => isLive(m.status))
 
   return (
@@ -155,7 +162,7 @@ export default function TodayMatches() {
           alignItems: 'center',
           gap: '8px',
         }}>
-          📅 วันนี้ — {formatDate(today.toISOString())}
+          📅 วันนี้{todayLabel ? ` — ${todayLabel}` : ''}
           {hasLive && (
             <span style={{
               fontSize: '10px',

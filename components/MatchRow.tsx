@@ -2,6 +2,7 @@
 // components/MatchRow.tsx
 
 import type { Match, MatchStatus, GoalEvent } from '@/types/football'
+import { formatThaiTime } from '@/lib/date-utils'
 
 const LIVE_STATUSES: MatchStatus[] = ['1H', 'HT', '2H', 'ET', 'P']
 
@@ -14,9 +15,7 @@ function isFinished(status: MatchStatus) {
 }
 
 function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString('th-TH', {
-    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok',
-  }) + ' น.'
+  return formatThaiTime(dateStr)
 }
 
 function statusLabel(match: Match): { text: string; color: string } {

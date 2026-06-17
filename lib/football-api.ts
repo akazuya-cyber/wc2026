@@ -16,6 +16,7 @@
 //     away_scorers fields), which is accurate once matches have been played.
 //   - Squads are NOT available from this source; fetchSquad() returns an
 //     empty squad with a note. Swap in a squads-capable source later if needed.
+// [NOTE] For personal group only - Not need many transaction
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type {
