@@ -16,7 +16,6 @@
 //     away_scorers fields), which is accurate once matches have been played.
 //   - Squads are NOT available from this source; fetchSquad() returns an
 //     empty squad with a note. Swap in a squads-capable source later if needed.
-// [NOTE] For personal group only - Not need many transaction
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type {
@@ -466,6 +465,31 @@ export async function fetchMatchesByDate(date: string): Promise<Match[]> {
   })
 }
 
+/**
+ * Normalize a player name for deduplication across games.
+ * worldcup26.ir inconsistently uses "K. Mbappé" in some games and
+ * "Kylian Mbappé" in others. We reduce to lowercase last-word (surname)
+ * which is almost always stable, then use the longest/most-complete name
+ * seen as the display name.
+ *
+ * Strategy: key = lowercase of the last space-separated token (surname).
+ * For compound surnames this can collide, but in practice WC squads have
+ * unique surnames per team — and we also include team_id in the key.
+ */
+function normalizePlayerKey(name: string, teamId: number): string {
+  const cleaned = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // strip diacritics: é→e, ú→u, etc.
+    .trim()
+
+  // Take the last word as surname key
+  const parts = cleaned.split(/\s+/)
+  const surname = parts[parts.length - 1]
+
+  return `${teamId}:${surname}`
+}
+
 // ── Public API: Top Scorers ───────────────────────────────────────────────────
 
 /**
@@ -479,8 +503,10 @@ export async function fetchTopScorers(limit = 10): Promise<TopScorer[]> {
 
   const [games, teamLookup] = await Promise.all([fetchAllGames(), buildTeamLookup()])
 
-  // Tally goals per player name (+ which team they play for)
-  const tally = new Map<string, { goals: number; team: Team; appearances: Set<number> }>()
+  // Tally goals per player — keyed by normalizePlayerKey to merge
+  // "K. Mbappé" and "Kylian Mbappé" (same surname, same team) into one entry.
+  // We keep the longest name seen as the display name.
+  const tally = new Map<string, { goals: number; team: Team; appearances: Set<number>; displayName: string }>()
 
   for (const g of games) {
     if (g.finished !== 'TRUE') continue
@@ -490,24 +516,29 @@ export async function fetchTopScorers(limit = 10): Promise<TopScorer[]> {
 
     for (const scorer of parseScorers(g.home_scorers)) {
       if (scorer.ownGoal || !homeTeam) continue
-      const entry = tally.get(scorer.player) ?? { goals: 0, team: homeTeam, appearances: new Set() }
+      const key = normalizePlayerKey(scorer.player, Number(g.home_team_id))
+      const entry = tally.get(key) ?? { goals: 0, team: homeTeam, appearances: new Set(), displayName: scorer.player }
       entry.goals += 1
       entry.appearances.add(Number(g.id))
-      tally.set(scorer.player, entry)
+      // Prefer the longer/more-complete name as display name
+      if (scorer.player.length > entry.displayName.length) entry.displayName = scorer.player
+      tally.set(key, entry)
     }
     for (const scorer of parseScorers(g.away_scorers)) {
       if (scorer.ownGoal || !awayTeam) continue
-      const entry = tally.get(scorer.player) ?? { goals: 0, team: awayTeam, appearances: new Set() }
+      const key = normalizePlayerKey(scorer.player, Number(g.away_team_id))
+      const entry = tally.get(key) ?? { goals: 0, team: awayTeam, appearances: new Set(), displayName: scorer.player }
       entry.goals += 1
       entry.appearances.add(Number(g.id))
-      tally.set(scorer.player, entry)
+      if (scorer.player.length > entry.displayName.length) entry.displayName = scorer.player
+      tally.set(key, entry)
     }
   }
 
   const scorers: TopScorer[] = Array.from(tally.entries())
-    .map(([name, info]) => ({
+    .map(([, info]) => ({
       rank: 0,
-      player: { id: 0, name },
+      player: { id: 0, name: info.displayName },
       team: info.team,
       goals: info.goals,
       assists: 0,
