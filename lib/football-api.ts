@@ -267,8 +267,11 @@ function parseScorers(raw: string): GoalEvent[] {
   // to the delimiter, making boundaries ambiguous. Instead we use a regex
   // to extract each "name minute'[+addl'][(flag)]" token directly.
 
-  // TOKEN matches: <name> <digits>'[+digits'] [(p)|(og)]
-  const TOKEN = /([^{",\n]+?)\s+(\d+)'\s*(?:\+\d+')?\s*(?:\(\s*(p|og)\s*\))?/gi
+  // worldcup26.ir uses two injury-time formats inconsistently:
+  //   "45'+5'"  — quote after base minute, then +addl'
+  //   "90+5'"   — no quote after base minute, just +addl'
+  // TOKEN handles both: \d+(?:'\s*\+\d+|\+\d+)?'
+  const TOKEN = /([^{",\n]+?)\s+(\d+)(?:'\s*\+\d+|\+\d+)?'\s*(?:\(\s*(p|og)\s*\))?/gi
 
   const results: GoalEvent[] = []
   let m: RegExpExecArray | null
