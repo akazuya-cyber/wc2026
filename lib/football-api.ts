@@ -469,6 +469,58 @@ export async function fetchMatchesByDate(date: string): Promise<Match[]> {
 }
 
 /**
+ * Correction map for names that worldcup26.ir sends with typos/transliteration
+ * errors. Key = exact string from API (lowercased), value = correct display name.
+ * Add entries here whenever a new garbled name is discovered.
+ */
+const PLAYER_NAME_CORRECTIONS: Record<string, string> = {
+  // Germany
+  'dniz avndav': 'Deniz Undav',
+  'n. schlotterbeck': 'Nico Schlotterbeck',
+  // Japan
+  'aiash ivida': 'Ayase Ueda',
+  // Colombia
+  'dnil mvnvz': 'Daniel Muñoz',
+  'lviiz diaz': 'Luis Díaz',
+  'khamintvn kampaz': 'Jaminton Campaz',
+  // Uzbekistan
+  'abas bk fiz allh af': 'Abbosbek Fayzullaev',
+  // Ghana
+  'kalb iirnki': 'Christopher Bonsu Baah',
+  // Switzerland
+  'jvhan mnzambi': 'Johan Manzambi',
+  'rvbn vargas': 'Ruben Vargas',
+  // Austria (garbled Jordan names)
+  'rvmanv ashmid': 'Rustam Ashurmatov',
+  'izn alarb': 'Yazan Alarab',
+  'ali avlvan': 'Ali Olwan',
+  // Jordan vs Algeria
+  'al rashdan': 'Nizar Alrashdan',
+  'nzir bnbvali': 'Nadhir Benbouali',
+  // Portugal
+  'nvnv mndz': 'Nuno Mendes',
+  'abdalvhid namtvf': 'Abduvohid Nematov',
+  // Canada
+  'kail larin': 'Cyle Larin',
+  'mohamed almnai': 'Mohamed Manai',
+  // Morocco
+  'asmaail saibari': 'Ismael Saibari',
+  // Cape Verde
+  'hliv varla': 'Hélio Varela',
+  // Norway
+  'markvs hlmgrn pdrsn': 'Marcus Holmgren Pedersen',
+  // Iraq
+  'armin mhmich': 'Armin Mahmić',
+  // Czech Republic
+  '‫mikhal sadilk': 'Michal Sadílek',
+}
+
+function correctPlayerName(raw: string): string {
+  const key = raw.toLowerCase().trim()
+  return PLAYER_NAME_CORRECTIONS[key] ?? raw
+}
+
+/**
  * Normalize a player name for deduplication across games.
  * worldcup26.ir inconsistently uses "K. Mbappé" in some games and
  * "Kylian Mbappé" in others. We reduce to lowercase last-word (surname)
@@ -519,21 +571,22 @@ export async function fetchTopScorers(limit = 10): Promise<TopScorer[]> {
 
     for (const scorer of parseScorers(g.home_scorers)) {
       if (scorer.ownGoal || !homeTeam) continue
-      const key = normalizePlayerKey(scorer.player, Number(g.home_team_id))
-      const entry = tally.get(key) ?? { goals: 0, team: homeTeam, appearances: new Set(), displayName: scorer.player }
+      const name = correctPlayerName(scorer.player)
+      const key = normalizePlayerKey(name, Number(g.home_team_id))
+      const entry = tally.get(key) ?? { goals: 0, team: homeTeam, appearances: new Set(), displayName: name }
       entry.goals += 1
       entry.appearances.add(Number(g.id))
-      // Prefer the longer/more-complete name as display name
-      if (scorer.player.length > entry.displayName.length) entry.displayName = scorer.player
+      if (name.length > entry.displayName.length) entry.displayName = name
       tally.set(key, entry)
     }
     for (const scorer of parseScorers(g.away_scorers)) {
       if (scorer.ownGoal || !awayTeam) continue
-      const key = normalizePlayerKey(scorer.player, Number(g.away_team_id))
-      const entry = tally.get(key) ?? { goals: 0, team: awayTeam, appearances: new Set(), displayName: scorer.player }
+      const name = correctPlayerName(scorer.player)
+      const key = normalizePlayerKey(name, Number(g.away_team_id))
+      const entry = tally.get(key) ?? { goals: 0, team: awayTeam, appearances: new Set(), displayName: name }
       entry.goals += 1
       entry.appearances.add(Number(g.id))
-      if (scorer.player.length > entry.displayName.length) entry.displayName = scorer.player
+      if (name.length > entry.displayName.length) entry.displayName = name
       tally.set(key, entry)
     }
   }
