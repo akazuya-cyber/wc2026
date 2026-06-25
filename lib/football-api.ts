@@ -293,15 +293,16 @@ function parseScorers(raw: string): GoalEvent[] {
 // ── Fixture mapping ───────────────────────────────────────────────────────────
 
 function mapFixture(g: RawGame): Match {
-  const isPlaceholder = g.home_team_id === '0' || g.away_team_id === '0'
+  // Handle each side independently — worldcup26.ir progressively fills in
+  // team_id as knockout pairings are confirmed (one side may be known before
+  // the other). team_id === '0' means "not yet determined".
+  const homeTeam: Team = g.home_team_id !== '0'
+    ? makeTeam(g.home_team_id, g.home_team_name_en ?? `Team ${g.home_team_id}`)
+    : { id: 0, name: g.home_team_label ?? 'TBD', code: 'TBD', flag: '🏳️' }
 
-  const homeTeam: Team = isPlaceholder
-    ? { id: 0, name: g.home_team_label ?? 'TBD', code: 'TBD', flag: '🏳️' }
-    : makeTeam(g.home_team_id, g.home_team_name_en ?? `Team ${g.home_team_id}`)
-
-  const awayTeam: Team = isPlaceholder
-    ? { id: 0, name: g.away_team_label ?? 'TBD', code: 'TBD', flag: '🏳️' }
-    : makeTeam(g.away_team_id, g.away_team_name_en ?? `Team ${g.away_team_id}`)
+  const awayTeam: Team = g.away_team_id !== '0'
+    ? makeTeam(g.away_team_id, g.away_team_name_en ?? `Team ${g.away_team_id}`)
+    : { id: 0, name: g.away_team_label ?? 'TBD', code: 'TBD', flag: '🏳️' }
 
   const round = mapRound(g.group)
 
