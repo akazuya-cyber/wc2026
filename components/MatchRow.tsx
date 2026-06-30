@@ -61,6 +61,15 @@ export default function MatchRow({ match }: { match: Match }) {
   const finished = isFinished(match.status)
   const { text: statusText, color: statusColor } = statusLabel(match)
 
+  const hasPenalties =
+    match.status === 'PEN' &&
+    match.homePenaltyScore !== null &&
+    match.awayPenaltyScore !== null
+
+  // Winner highlight for penalty shootouts (the side with more pens)
+  const homeWonPens = hasPenalties && match.homePenaltyScore! > match.awayPenaltyScore!
+  const awayWonPens = hasPenalties && match.awayPenaltyScore! > match.homePenaltyScore!
+
   return (
     <div style={{
       background: 'var(--surface)',
@@ -91,32 +100,55 @@ export default function MatchRow({ match }: { match: Match }) {
 
       {/* Home team */}
       <div style={{ textAlign: 'right' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', fontSize: '13px', fontWeight: 600 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px',
+          fontSize: '13px', fontWeight: homeWonPens ? 700 : 600,
+          color: awayWonPens ? 'var(--muted)' : 'var(--text)',
+        }}>
           <span>{match.homeTeam.name}</span>
           <span style={{ fontSize: '16px' }}>{match.homeTeam.flag}</span>
+          {homeWonPens && <span title="ชนะจุดโทษ" style={{ fontSize: '12px' }}>✓</span>}
         </div>
         <ScorersList scorers={match.homeScorers} align="right" />
       </div>
 
       {/* Score */}
-      <div style={{
-        background: 'var(--bg)',
-        borderRadius: '4px',
-        padding: '4px 14px',
-        fontFamily: 'var(--font-display)',
-        fontSize: '20px', fontWeight: 700,
-        letterSpacing: '3px',
-        color: live ? 'var(--green)' : finished ? 'var(--text)' : 'var(--gold)',
-        minWidth: '64px', textAlign: 'center',
-      }}>
-        {match.homeScore !== null && match.awayScore !== null
-          ? `${match.homeScore}–${match.awayScore}`
-          : 'vs'}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{
+          background: 'var(--bg)',
+          borderRadius: '4px',
+          padding: '4px 14px',
+          fontFamily: 'var(--font-display)',
+          fontSize: '20px', fontWeight: 700,
+          letterSpacing: '3px',
+          color: live ? 'var(--green)' : finished ? 'var(--text)' : 'var(--gold)',
+          minWidth: '64px', textAlign: 'center',
+        }}>
+          {match.homeScore !== null && match.awayScore !== null
+            ? `${match.homeScore}–${match.awayScore}`
+            : 'vs'}
+        </div>
+        {hasPenalties && (
+          <div style={{
+            fontSize: '11px',
+            color: 'var(--gold)',
+            fontWeight: 600,
+            marginTop: '3px',
+            letterSpacing: '0.5px',
+          }}>
+            ({match.homePenaltyScore}–{match.awayPenaltyScore} จุดโทษ)
+          </div>
+        )}
       </div>
 
       {/* Away team */}
       <div style={{ textAlign: 'left' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          fontSize: '13px', fontWeight: awayWonPens ? 700 : 600,
+          color: homeWonPens ? 'var(--muted)' : 'var(--text)',
+        }}>
+          {awayWonPens && <span title="ชนะจุดโทษ" style={{ fontSize: '12px' }}>✓</span>}
           <span style={{ fontSize: '16px' }}>{match.awayTeam.flag}</span>
           <span>{match.awayTeam.name}</span>
         </div>

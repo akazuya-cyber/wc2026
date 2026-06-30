@@ -86,6 +86,10 @@ export interface Match {
   awayScore: number | null
   homeScorers: GoalEvent[]
   awayScorers: GoalEvent[]
+  // Penalty shootout result (knockout stages only) — set when the match
+  // was decided on penalties after a draw in normal/extra time.
+  homePenaltyScore: number | null
+  awayPenaltyScore: number | null
 }
 
 // Matches grouped by date for schedule view

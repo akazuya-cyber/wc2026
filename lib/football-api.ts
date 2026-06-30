@@ -111,6 +111,8 @@ interface RawGame {
   away_team_name_fa?: string
   home_team_label?: string  // for knockout placeholders, e.g. "Winner Group A"
   away_team_label?: string
+  home_penalty_score?: string  // present only when match decided on penalties
+  away_penalty_score?: string
 }
 
 interface RawGroupTeamRow {
@@ -196,7 +198,14 @@ function makeTeam(id: string, name: string): Team {
 // ── Status / round mappers ────────────────────────────────────────────────────
 
 function mapStatus(game: RawGame): MatchStatus {
-  if (game.finished === 'TRUE') return 'FT'
+  if (game.finished === 'TRUE') {
+    // A penalty shootout result means the match was decided on penalties
+    // after normal/extra time ended level.
+    if (game.home_penalty_score != null && game.away_penalty_score != null) {
+      return 'PEN'
+    }
+    return 'FT'
+  }
   const elapsed = (game.time_elapsed ?? '').toLowerCase().trim()
   if (elapsed === 'notstarted' || elapsed === '') return 'NS'
   if (elapsed === 'ht' || elapsed === 'halftime') return 'HT'
@@ -320,6 +329,8 @@ function mapFixture(g: RawGame): Match {
     awayScore:   mapStatus(g) === 'NS' ? null : Number(g.away_score),
     homeScorers: parseScorers(g.home_scorers),
     awayScorers: parseScorers(g.away_scorers),
+    homePenaltyScore: g.home_penalty_score != null ? Number(g.home_penalty_score) : null,
+    awayPenaltyScore: g.away_penalty_score != null ? Number(g.away_penalty_score) : null,
   }
 }
 

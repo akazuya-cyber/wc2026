@@ -34,23 +34,34 @@ function formatDate(dateStr: string): string {
 function ScoreDisplay({ match }: { match: Match }) {
   const live = isLive(match.status)
   const finished = ['FT', 'AET', 'PEN'].includes(match.status)
+  const hasPenalties =
+    match.status === 'PEN' &&
+    match.homePenaltyScore !== null &&
+    match.awayPenaltyScore !== null
 
   return (
-    <div style={{
-      background: 'var(--bg)',
-      padding: '2px 8px',
-      borderRadius: '3px',
-      fontFamily: 'var(--font-display)',
-      fontSize: '16px',
-      fontWeight: 700,
-      letterSpacing: '2px',
-      color: live ? 'var(--green)' : finished ? 'var(--text)' : 'var(--gold)',
-      minWidth: '44px',
-      textAlign: 'center',
-    }}>
-      {match.homeScore !== null && match.awayScore !== null
-        ? `${match.homeScore} – ${match.awayScore}`
-        : '– : –'}
+    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{
+        background: 'var(--bg)',
+        padding: '2px 8px',
+        borderRadius: '3px',
+        fontFamily: 'var(--font-display)',
+        fontSize: '16px',
+        fontWeight: 700,
+        letterSpacing: '2px',
+        color: live ? 'var(--green)' : finished ? 'var(--text)' : 'var(--gold)',
+        minWidth: '44px',
+        textAlign: 'center',
+      }}>
+        {match.homeScore !== null && match.awayScore !== null
+          ? `${match.homeScore} – ${match.awayScore}`
+          : '– : –'}
+      </div>
+      {hasPenalties && (
+        <div style={{ fontSize: '9px', color: 'var(--gold)', fontWeight: 600, marginTop: '1px' }}>
+          ({match.homePenaltyScore}-{match.awayPenaltyScore} จุดโทษ)
+        </div>
+      )}
     </div>
   )
 }
@@ -97,6 +108,10 @@ function MatchCard({ match }: { match: Match }) {
           <span style={{ color: 'var(--gold)' }}>พักครึ่ง</span>
         ) : match.status === 'FT' ? (
           <span>จบแล้ว</span>
+        ) : match.status === 'AET' ? (
+          <span>จบ (ต่อเวลา)</span>
+        ) : match.status === 'PEN' ? (
+          <span>จบ (จุดโทษ)</span>
         ) : (
           formatTime(match.date)
         )}
