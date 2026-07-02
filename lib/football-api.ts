@@ -201,7 +201,12 @@ function mapStatus(game: RawGame): MatchStatus {
   if (game.finished === 'TRUE') {
     // A penalty shootout result means the match was decided on penalties
     // after normal/extra time ended level.
-    if (game.home_penalty_score != null && game.away_penalty_score != null) {
+    // worldcup26.ir sends penalty scores as either a numeric string ("4")
+    // or the string literal "null" when there was no shootout.
+    if (game.home_penalty_score != null &&
+        game.home_penalty_score !== 'null' &&
+        game.away_penalty_score != null &&
+        game.away_penalty_score !== 'null') {
       return 'PEN'
     }
     return 'FT'
@@ -329,8 +334,10 @@ function mapFixture(g: RawGame): Match {
     awayScore:   mapStatus(g) === 'NS' ? null : Number(g.away_score),
     homeScorers: parseScorers(g.home_scorers),
     awayScorers: parseScorers(g.away_scorers),
-    homePenaltyScore: g.home_penalty_score != null ? Number(g.home_penalty_score) : null,
-    awayPenaltyScore: g.away_penalty_score != null ? Number(g.away_penalty_score) : null,
+    homePenaltyScore: (g.home_penalty_score != null && g.home_penalty_score !== 'null')
+      ? Number(g.home_penalty_score) : null,
+    awayPenaltyScore: (g.away_penalty_score != null && g.away_penalty_score !== 'null')
+      ? Number(g.away_penalty_score) : null,
   }
 }
 
